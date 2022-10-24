@@ -1,17 +1,20 @@
-const { getNamedAccounts, ethers } = require("hardhat")
-const getWeth = require("./getWeth")
+const { ethers, getNamedAccounts } = require("hardhat")
+const { getWeth, AMOUNT } = require("./getWeth")
 
 async function main() {
     await getWeth()
-    const { deployer } = getNamedAccounts()
-
-    // lending pool addresses provider: 0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5
-    // lending pool: ^
-
+    const { deployer } = await getNamedAccounts()
     const lendingPool = await getLendingPool(deployer)
     console.log(`LendingPool address ${lendingPool.address}`)
 
     const wethTokenAddress = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+    // Approve token!
+    await approveErc20(wethTokenAddress, lendingPool.address, AMOUNT, deployer)
+
+    // Deposit!
+    console.log("Depositing WETH...")
+    await lendingPool.deposit(wethTokenAddress, AMOUNT, deployer, 0)
+    console.log("Deposited!")
 }
 
 async function getLendingPool(account) {
