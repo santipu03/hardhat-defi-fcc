@@ -32,11 +32,20 @@ async function getLendingPool(account) {
 }
 
 async function approveErc20(
-    contractAddress,
+    erc20Address,
     spenderAddress,
     amountToSpend,
     account
-) {}
+) {
+    const erc20Token = await ethers.getContractAt(
+        "IERC20",
+        erc20Address,
+        account
+    )
+    const tx = await erc20Token.approve(spenderAddress, amountToSpend)
+    await tx.wait(1)
+    console.log("Approved!")
+}
 
 main()
     .then(() => process.exit(0))
