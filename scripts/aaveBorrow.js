@@ -23,7 +23,7 @@ async function main() {
     // Get the DAI price
     const daiPrice = await getDaiPrice()
 
-    // Get the DAI quantity to borrow
+    // Get the DAI quantity to borrow (Use 95% of the max we can borrow)
     const amountDaiToBorrow = availableBorrowsETH.toString() * 0.95 * (1 / daiPrice.toNumber())
     console.log(`We can borrow ${amountDaiToBorrow} DAI`)
     const amountDaiToBorrowWei = ethers.utils.parseEther(amountDaiToBorrow.toString())
@@ -32,7 +32,12 @@ async function main() {
     const daiTokenAddress = "0x6B175474E89094C44Da98b954EedeAC495271d0F"
     await borrowDai(daiTokenAddress, lendingPool, amountDaiToBorrowWei, deployer)
 
-    // Get our borrow data!
+    await getBorrowUserData(lendingPool, deployer)
+
+    // Repay half of the DAI tokens borrowed
+    const amountDaiToRepayWei = ethers.utils.parseEther((amountDaiToBorrow / 2).toString())
+    await repayDai(daiTokenAddress, lendingPool, amountDaiToRepayWei, deployer)
+
     await getBorrowUserData(lendingPool, deployer)
 }
 
@@ -60,6 +65,14 @@ async function borrowDai(daiAddress, lendingPool, amountDaiToBorrowWei, account)
     const borrowTx = await lendingPool.borrow(daiAddress, amountDaiToBorrowWei, 1, 0, account)
     await borrowTx.wait(1)
     console.log(`You've borrowed!`)
+}
+
+async function repayDai(daiAddress, lendingPool, amount, account) {
+    // First, we need to approve the lendingPool to spend our DAI
+    await approveErc20(daiAddress, lendingPool.address, amount, account)
+    const repayTx = await lendingPool.repay(daiAddress, amount, 1, account)
+    await repayTx.wait(1)
+    console.log("Repayed some DAI!")
 }
 
 async function getLendingPool(account) {
