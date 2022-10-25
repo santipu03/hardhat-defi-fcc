@@ -17,9 +17,11 @@ async function main() {
     await lendingPool.deposit(wethTokenAddress, AMOUNT, deployer, 0)
     console.log("Deposited!")
 
-    // Borrow!
-    const borrowData = await getBorrowUserData(lendingPool, deployer)
-    const { totalDebtETH, availableBorrowsETH } = borrowData
+    // Get our borrow data!
+    let { totalDebtETH, availableBorrowsETH } = await getBorrowUserData(lendingPool, deployer)
+
+    // Get the DAI price
+    const price = await getDaiPrice()
 }
 
 async function getBorrowUserData(lendingPool, account) {
@@ -29,6 +31,17 @@ async function getBorrowUserData(lendingPool, account) {
     console.log(`You have ${totalDebtETH.toString() / 10 ** 18} ETH borrowed.`)
     console.log(`You can borrow ${availableBorrowsETH.toString() / 10 ** 18} ETH`)
     return { availableBorrowsETH, totalDebtETH }
+}
+
+async function getDaiPrice() {
+    // For this contract, we don't need to connect to our wallet bc we'll be only reading from it
+    const daiEthPriceFeed = await ethers.getContractAt(
+        "AggregatorV3Interface",
+        "0x773616E4d11A78F511299002da57A0a94577F1f4"
+    )
+    const price = (await daiEthPriceFeed.latestRoundData())[1]
+    console.log(`The DAI/ETH price is ${price.toString() / 10 ** 18}`)
+    return price
 }
 
 async function getLendingPool(account) {
