@@ -8,6 +8,7 @@ async function main() {
     console.log(`LendingPool address ${lendingPool.address}`)
 
     const wethTokenAddress = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+
     // Approve token!
     await approveErc20(wethTokenAddress, lendingPool.address, AMOUNT, deployer)
 
@@ -15,6 +16,19 @@ async function main() {
     console.log("Depositing WETH...")
     await lendingPool.deposit(wethTokenAddress, AMOUNT, deployer, 0)
     console.log("Deposited!")
+
+    // Borrow!
+    const borrowData = await getBorrowUserData(lendingPool, deployer)
+    const { totalDebtETH, availableBorrowsETH } = borrowData
+}
+
+async function getBorrowUserData(lendingPool, account) {
+    const { totalCollateralETH, totalDebtETH, availableBorrowsETH } =
+        await lendingPool.getUserAccountData(account)
+    console.log(`You have ${totalCollateralETH.toString() / 10 ** 18} ETH deposited`)
+    console.log(`You have ${totalDebtETH.toString() / 10 ** 18} ETH borrowed.`)
+    console.log(`You can borrow ${availableBorrowsETH.toString() / 10 ** 18} ETH`)
+    return { availableBorrowsETH, totalDebtETH }
 }
 
 async function getLendingPool(account) {
@@ -24,27 +38,13 @@ async function getLendingPool(account) {
         account
     )
 
-    const lendingPoolAddress =
-        await lendingPoolAddressesProvider.getLendingPool()
-    const lendingPool = await ethers.getContractAt(
-        "ILendingPool",
-        lendingPoolAddress,
-        account
-    )
+    const lendingPoolAddress = await lendingPoolAddressesProvider.getLendingPool()
+    const lendingPool = await ethers.getContractAt("ILendingPool", lendingPoolAddress, account)
     return lendingPool
 }
 
-async function approveErc20(
-    erc20Address,
-    spenderAddress,
-    amountToSpend,
-    account
-) {
-    const erc20Token = await ethers.getContractAt(
-        "IERC20",
-        erc20Address,
-        account
-    )
+async function approveErc20(erc20Address, spenderAddress, amountToSpend, account) {
+    const erc20Token = await ethers.getContractAt("IERC20", erc20Address, account)
     const tx = await erc20Token.approve(spenderAddress, amountToSpend)
     await tx.wait(1)
     console.log("Approved!")
