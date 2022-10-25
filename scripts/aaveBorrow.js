@@ -1,4 +1,5 @@
-const { ethers, getNamedAccounts } = require("hardhat")
+const { ethers, getNamedAccounts, network } = require("hardhat")
+const { networkConfig } = require("../helper-hardhat-config")
 const { getWeth, AMOUNT } = require("./getWeth")
 
 async function main() {
@@ -7,7 +8,7 @@ async function main() {
     const lendingPool = await getLendingPool(deployer)
     console.log(`LendingPool address ${lendingPool.address}`)
 
-    const wethTokenAddress = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+    const wethTokenAddress = networkConfig[network.config.chainId].wethToken
 
     // Approve token!
     await approveErc20(wethTokenAddress, lendingPool.address, AMOUNT, deployer)
@@ -29,7 +30,7 @@ async function main() {
     const amountDaiToBorrowWei = ethers.utils.parseEther(amountDaiToBorrow.toString())
 
     // Borrow DAI
-    const daiTokenAddress = "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+    const daiTokenAddress = networkConfig[network.config.chainId].daiToken
     await borrowDai(daiTokenAddress, lendingPool, amountDaiToBorrowWei, deployer)
 
     await getBorrowUserData(lendingPool, deployer)
@@ -54,7 +55,7 @@ async function getDaiPrice() {
     // For this contract, we don't need to connect to our wallet bc we'll be only reading from it
     const daiEthPriceFeed = await ethers.getContractAt(
         "AggregatorV3Interface",
-        "0x773616E4d11A78F511299002da57A0a94577F1f4"
+        networkConfig[network.config.chainId].daiEthPriceFeed
     )
     const price = (await daiEthPriceFeed.latestRoundData())[1]
     console.log(`The DAI/ETH price is ${price.toString() / 10 ** 18}`)
@@ -78,7 +79,7 @@ async function repayDai(daiAddress, lendingPool, amount, account) {
 async function getLendingPool(account) {
     const lendingPoolAddressesProvider = await ethers.getContractAt(
         "ILendingPoolAddressesProvider",
-        "0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5",
+        networkConfig[network.config.chainId].lendingPoolAddressesProvider,
         account
     )
 
